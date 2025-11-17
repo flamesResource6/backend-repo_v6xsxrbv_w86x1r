@@ -1,0 +1,38 @@
+version: '3.9'
+services:
+  mongo:
+    image: mongo:6
+    restart: always
+    environment:
+      MONGO_INITDB_DATABASE: transpublic
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+  backend:
+    build: .
+    environment:
+      DATABASE_URL: mongodb://mongo:27017/
+      DATABASE_NAME: transpublic
+      JWT_SECRET: change-me
+      UPLOAD_DIR: /app/uploads
+    depends_on:
+      - mongo
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./uploads:/app/uploads
+  frontend:
+    image: node:18-alpine
+    working_dir: /app
+    volumes:
+      - ../frontend:/app
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0 --port 3000"
+    environment:
+      - VITE_BACKEND_URL=http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+volumes:
+  mongo_data:
